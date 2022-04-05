@@ -1,5 +1,11 @@
 import React, { ReactElement } from "react";
-import { Outlet, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import config from ".";
 import {
   AppAction,
@@ -177,4 +183,13 @@ const getRoutes = (
 
 const routes = [...AuthRoutes, ...DashboardRoutes];
 
-export { routes, getRoutes };
+const ApplicationRoutes = () => {
+  return (
+    <BrowserRouter>
+      <Outlet />
+      <Routes>{getRoutes(routes)}</Routes>
+    </BrowserRouter>
+  );
+};
+
+export default ApplicationRoutes;
