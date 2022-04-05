@@ -3,7 +3,7 @@
 ## Development
 
 ```bash
-cp .env.sample .env.dev
+cp .env.sample .env.local
 ```
 
 ## Production

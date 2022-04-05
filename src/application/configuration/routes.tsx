@@ -1,5 +1,11 @@
-import { ReactElement } from "react";
+import React, { ReactElement } from "react";
 import { Outlet, Route, useLocation } from "react-router-dom";
+import config from ".";
+import {
+  AppAction,
+  AppActions,
+  getAppContext,
+} from "../modules/app/app.provider";
 
 export type Permission = string;
 
@@ -43,10 +49,29 @@ const AuthRoutes: Array<IRoute> = [
   },
 ];
 
+// dashboard handlers
+const onChangeLanguage = (
+  language: string,
+  dispatch?: React.Dispatch<AppAction>
+) => {
+  dispatch && AppActions.switchLanguage(dispatch, language);
+};
+
 const DashboardContainer = () => {
+  const [state, dispatch] = getAppContext();
+
   return (
     <>
-      <h1>Dashboard Container</h1>
+      <h1>Dashboard Container {state.language}</h1>
+      {config.supportedLanguages.map(
+        (l) =>
+          state.language !== l && (
+            <button key={l} onClick={() => onChangeLanguage(l, dispatch)}>
+              {l}
+            </button>
+          )
+      )}
+
       <Outlet />
     </>
   );
