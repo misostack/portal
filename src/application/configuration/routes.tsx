@@ -15,16 +15,17 @@ import {
 } from "../modules/app/app.provider";
 
 export type Permission = string;
-
+export type Guard = () => boolean;
 export interface IRoute {
   path: string;
   childrens?: Array<IRoute>;
   component: ReactElement;
-  guard?: IRouteGuard;
-}
-
-export interface IRouteGuard {
-  permissions: Array<Permission>;
+  // all zones are private by default
+  public?: boolean;
+  // can have custom guards
+  guards?: Array<Guard>;
+  // by default private zone will be protected with permissions
+  permissions?: Array<Permission>;
 }
 
 export type RouteZoneCheckType = {
@@ -33,12 +34,12 @@ export type RouteZoneCheckType = {
 };
 
 export interface RouteConfig {
-  canAccessPrivateZone: (params: IRouteGuard) => RouteZoneCheckType;
+  canAccessPrivateZone: (permissions: Array<Permission>) => RouteZoneCheckType;
   canAccessPublicZone: () => RouteZoneCheckType;
 }
 
 export interface AuthAdapter {
-  canAccessPrivateZone(params: IRouteGuard): RouteZoneCheckType;
+  canAccessPrivateZone(permissions: Array<Permission>): RouteZoneCheckType;
   canAccessPublicZone(): RouteZoneCheckType;
 }
 
@@ -63,10 +64,11 @@ const AuthRoutes: Array<IRoute> = [
   {
     path: "auth",
     component: <AuthContainer />,
+    public: true,
     childrens: [
-      { path: "login", component: <AuthLogin /> },
-      { path: "forgot-password", component: <ForgotPassword /> },
-      { path: "", component: <AuthLogin /> },
+      { path: "login", component: <AuthLogin />, public: true },
+      { path: "forgot-password", component: <ForgotPassword />, public: true },
+      { path: "", component: <AuthLogin />, public: true },
     ],
   },
 ];
@@ -111,16 +113,12 @@ const DashboardRoutes: Array<IRoute> = [
   {
     path: "",
     component: <DashboardContainer />,
-    guard: {
-      permissions: ["private"],
-    },
+    permissions: [],
     childrens: [
       {
         path: "",
         component: <Dashboard />,
-        guard: {
-          permissions: ["private"],
-        },
+        permissions: [],
       },
     ],
   },
@@ -128,16 +126,18 @@ const DashboardRoutes: Array<IRoute> = [
 
 const ProtectedRoute = ({
   children,
-  guard,
   config,
+  guards,
+  permissions,
 }: {
   children: JSX.Element;
-  guard: IRouteGuard;
   config: RouteConfig;
+  guards?: Array<Guard>;
+  permissions?: Array<Permission>;
 }) => {
   let location = useLocation();
   const { canAccessPrivateZone } = config;
-  const { isAllowed, redirectUrl } = canAccessPrivateZone(guard);
+  const { isAllowed, redirectUrl } = canAccessPrivateZone(permissions || []);
   if (isAllowed) {
     return children;
   }
@@ -148,9 +148,11 @@ const ProtectedRoute = ({
 const PublicRoute = ({
   children,
   config,
+  guards,
 }: {
   children: JSX.Element;
   config: RouteConfig;
+  guards: Array<Guard>;
 }) => {
   let location = useLocation();
   const { canAccessPublicZone } = config;
@@ -163,11 +165,19 @@ const PublicRoute = ({
 };
 
 const buildRouteGuard = (route: IRoute, config: RouteConfig): JSX.Element => {
-  if (!route.guard) {
-    return <PublicRoute config={config}>{route.component}</PublicRoute>;
+  if (route.public) {
+    return (
+      <PublicRoute config={config} guards={route.guards || []}>
+        {route.component}
+      </PublicRoute>
+    );
   }
   return (
-    <ProtectedRoute guard={route.guard} config={config}>
+    <ProtectedRoute
+      config={config}
+      guards={route.guards || []}
+      permissions={route.permissions || []}
+    >
       {route.component}
     </ProtectedRoute>
   );

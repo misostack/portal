@@ -1,6 +1,6 @@
 import {
   AuthAdapter,
-  IRouteGuard,
+  Permission,
   RouteZoneCheckType,
 } from "../../../configuration/routes";
 
@@ -15,16 +15,16 @@ class AuthService implements AuthAdapter {
     return AuthService.instance;
   }
 
-  canAccessPrivateZone(params: IRouteGuard): RouteZoneCheckType {
+  canAccessPrivateZone(permissions: Array<Permission>): RouteZoneCheckType {
     return {
-      isAllowed: false,
+      isAllowed: true,
       redirectUrl: "/auth",
     };
   }
   canAccessPublicZone(): RouteZoneCheckType {
     return {
-      isAllowed: true,
-      redirectUrl: "",
+      isAllowed: false,
+      redirectUrl: "/",
     };
   }
 }
