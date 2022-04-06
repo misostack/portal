@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useReducer } from "react";
+import React, { useContext, useMemo, useReducer } from "react";
 import { getUserLanguage } from "../../../library/helpers";
 import config from "../../configuration";
 import PropTypes from "prop-types";

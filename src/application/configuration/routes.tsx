@@ -1,6 +1,7 @@
 import React, { ReactElement } from "react";
 import {
   BrowserRouter,
+  Navigate,
   Outlet,
   Route,
   Routes,
@@ -24,6 +25,21 @@ export interface IRoute {
 
 export interface IRouteGuard {
   permissions: Array<Permission>;
+}
+
+export type RouteZoneCheckType = {
+  isAllowed: boolean;
+  redirectUrl: string;
+};
+
+export interface RouteConfig {
+  canAccessPrivateZone: (params: IRouteGuard) => RouteZoneCheckType;
+  canAccessPublicZone: () => RouteZoneCheckType;
+}
+
+export interface AuthAdapter {
+  canAccessPrivateZone(params: IRouteGuard): RouteZoneCheckType;
+  canAccessPublicZone(): RouteZoneCheckType;
 }
 
 const AuthContainer = () => {
@@ -113,81 +129,86 @@ const DashboardRoutes: Array<IRoute> = [
 const ProtectedRoute = ({
   children,
   guard,
+  config,
 }: {
   children: JSX.Element;
   guard: IRouteGuard;
+  config: RouteConfig;
 }) => {
   let location = useLocation();
-  // const [appState] = useAppControllerProvider();
-  // const { user } = appState;
-  // if (!user) {
-  //   return <Navigate to="/auth" state={{ from: location }} replace />;
-  // }
-
-  return children;
+  const { canAccessPrivateZone } = config;
+  const { isAllowed, redirectUrl } = canAccessPrivateZone(guard);
+  if (isAllowed) {
+    return children;
+  }
+  // otherwise
+  return <Navigate to={redirectUrl} state={{ from: location }} replace />;
 };
 
 const PublicRoute = ({
   children,
-  guard,
+  config,
 }: {
   children: JSX.Element;
-  guard: IRouteGuard;
+  config: RouteConfig;
 }) => {
   let location = useLocation();
-  // const [appState] = useAppControllerProvider();
-  // const { user } = appState;
-
-  // if (user) {
-  //   return <Navigate to="/" state={{ from: location }} replace />;
-  // }
-
-  return children;
-};
-
-const buildRouteGuard = (route: IRoute): JSX.Element => {
-  if (!route.guard) {
-    return (
-      <PublicRoute guard={{ permissions: ["public"] }}>
-        {route.component}
-      </PublicRoute>
-    );
+  const { canAccessPublicZone } = config;
+  const { isAllowed, redirectUrl } = canAccessPublicZone();
+  if (isAllowed) {
+    return children;
   }
-  return <ProtectedRoute guard={route.guard}>{route.component}</ProtectedRoute>;
+  // otherwise
+  return <Navigate to={redirectUrl} state={{ from: location }} replace />;
 };
 
-const buildRoute = (route: IRoute, index: number): ReactElement => {
+const buildRouteGuard = (route: IRoute, config: RouteConfig): JSX.Element => {
+  if (!route.guard) {
+    return <PublicRoute config={config}>{route.component}</PublicRoute>;
+  }
+  return (
+    <ProtectedRoute guard={route.guard} config={config}>
+      {route.component}
+    </ProtectedRoute>
+  );
+};
+
+const buildRoute = (
+  route: IRoute,
+  config: RouteConfig,
+  index: number
+): ReactElement => {
   const { path, childrens } = route;
 
   if (childrens && childrens.length > 0) {
     return (
-      <Route key={index} path={path} element={buildRouteGuard(route)}>
-        {getRoutes(childrens, index)}
+      <Route key={index} path={path} element={buildRouteGuard(route, config)}>
+        {getRoutes(childrens, config, index)}
       </Route>
     );
   }
 
-  return <Route key={index} path={path} element={buildRouteGuard(route)} />;
+  return (
+    <Route key={index} path={path} element={buildRouteGuard(route, config)} />
+  );
 };
 const getRoutes = (
   allRoutes: Array<IRoute>,
+  config: RouteConfig,
   parent: number = -1
 ): Array<ReactElement> =>
   allRoutes.map((route: IRoute, index) => {
-    // if (route.collapse) {
-    //   return getRoutes(route.collapse);
-    // }
     const routeIndex = parent > -1 ? parent * 10 + index : index;
-    return buildRoute(route, routeIndex);
+    return buildRoute(route, config, routeIndex);
   });
 
 const routes = [...AuthRoutes, ...DashboardRoutes];
 
-const ApplicationRoutes = () => {
+const ApplicationRoutes = (config: RouteConfig) => {
   return (
     <BrowserRouter>
       <Outlet />
-      <Routes>{getRoutes(routes)}</Routes>
+      <Routes>{getRoutes(routes, config)}</Routes>
     </BrowserRouter>
   );
 };
