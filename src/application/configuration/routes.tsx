@@ -13,6 +13,7 @@ import {
   AppActions,
   getAppContext,
 } from "../modules/app/app.provider";
+import { authService } from "../modules/auth/auth.module";
 
 export type Permission = string;
 export type Guard = () => boolean;
@@ -53,7 +54,17 @@ const AuthContainer = () => {
 };
 
 const AuthLogin = () => {
-  return <div>login page</div>;
+  const doLogin = () => {
+    authService.login();
+  };
+  return (
+    <>
+      <div>login page</div>
+      <p>
+        <button onClick={() => doLogin()}>Login</button>
+      </p>
+    </>
+  );
 };
 
 const ForgotPassword = () => {
@@ -87,6 +98,15 @@ const DashboardContainer = () => {
   return (
     <>
       <h1>Dashboard Container {state.language}</h1>
+      <p>
+        <button
+          onClick={() => {
+            authService.logout();
+          }}
+        >
+          Logout
+        </button>
+      </p>
       {config.supportedLanguages.map(
         (l) =>
           state.language !== l && (
