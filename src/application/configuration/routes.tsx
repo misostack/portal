@@ -1,4 +1,4 @@
-import React, { ReactElement } from "react";
+import React, { ReactElement, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -94,6 +94,10 @@ const onChangeLanguage = (
 
 const DashboardContainer = () => {
   const [state, dispatch] = getAppContext();
+  console.log("DashboardContainer: constructor");
+  useEffect(() => {
+    console.log("DashboardContainer: Component Did Mount");
+  });
 
   return (
     <>
@@ -122,9 +126,19 @@ const DashboardContainer = () => {
 };
 
 const Dashboard = () => {
+  console.log("Dashboard: constructor");
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    console.log("Dashboard: Component Did Mount");
+  });
+  useEffect(() => {
+    console.log("Dashboard: Component Did Update", time);
+  }, [time]);
   return (
     <>
       <h1>Dashboard page</h1>
+      <p>{time.toString()}</p>
+      <button onClick={() => setTime(new Date())}>Change Date</button>
     </>
   );
 };
